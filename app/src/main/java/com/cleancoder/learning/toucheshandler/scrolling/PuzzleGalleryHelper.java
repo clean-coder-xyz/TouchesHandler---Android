@@ -1,4 +1,4 @@
-package com.cleancoder.learning.toucheshandler.superscrolling;
+package com.cleancoder.learning.toucheshandler.scrolling;
 
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,7 +11,6 @@ public interface PuzzleGalleryHelper {
     float getCoordinate(SimpleMotionEvent event);
     int getBackgroundResource();
     int getViewSize(View view);
-    int getScrollLength(View view);
     int getOrientation();
     LinearLayout.LayoutParams createLayoutParamsForMainPart();
     ViewGroup.LayoutParams createLayoutParams();

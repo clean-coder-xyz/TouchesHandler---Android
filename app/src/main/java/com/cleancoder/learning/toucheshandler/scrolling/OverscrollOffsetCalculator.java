@@ -1,4 +1,6 @@
-package com.cleancoder.learning.toucheshandler.superscrolling;
+package com.cleancoder.learning.toucheshandler.scrolling;
+
+import com.cleancoder.learning.toucheshandler.TaggedLogger;
 
 /**
  * Created by lsemenov on 17.09.2014.
@@ -24,6 +26,8 @@ public class OverscrollOffsetCalculator {
 
     public int calculateOverscrollOffset(int offsetOutOfEdge) {
         totalOffset += offsetOutOfEdge;
+        TaggedLogger.LEONID.debug("offsetOutOfEdge:  " + offsetOutOfEdge);
+        TaggedLogger.LEONID.debug("totalOffset():    " + totalOffset());
         return calculate();
     }
 

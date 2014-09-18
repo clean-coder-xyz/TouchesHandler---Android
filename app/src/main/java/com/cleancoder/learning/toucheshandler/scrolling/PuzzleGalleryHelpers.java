@@ -1,4 +1,4 @@
-package com.cleancoder.learning.toucheshandler.superscrolling;
+package com.cleancoder.learning.toucheshandler.scrolling;
 
 import android.view.View;
 import android.view.ViewGroup;
@@ -61,10 +61,6 @@ public class PuzzleGalleryHelpers {
             return view.getHeight();
         }
 
-        @Override
-        public int getScrollLength(View view) {
-            return view.getHeight() - view.getPaddingTop() - view.getPaddingBottom();
-        }
     };
 
 
@@ -117,10 +113,6 @@ public class PuzzleGalleryHelpers {
             return view.getWidth();
         }
 
-        @Override
-        public int getScrollLength(View view) {
-            return view.getWidth() - view.getPaddingLeft() - view.getPaddingRight();
-        }
     };
 
 }

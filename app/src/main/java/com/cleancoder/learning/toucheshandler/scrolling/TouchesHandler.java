@@ -1,4 +1,4 @@
-package com.cleancoder.learning.toucheshandler.superscrolling;
+package com.cleancoder.learning.toucheshandler.scrolling;
 
 import android.view.MotionEvent;
 import android.view.View;
@@ -22,8 +22,6 @@ public class TouchesHandler implements TouchHandler {
     private final Set<Integer> pointers;
     private boolean isScrollingOutOfStartEdgeStarted;
     private boolean isScrollingOutOfEndEdgeStarted;
-    private int offsetOutOfStartEdge;
-    private int offsetOutOfEndEdge;
     private Map<Integer,Integer> lastTouchedCoordinates;
     private Offset startOffset;
     private Offset endOffset;
@@ -68,15 +66,14 @@ public class TouchesHandler implements TouchHandler {
             }
             int coordinate = (int) puzzleGalleryHelper.getCoordinate(simpleMotionEvent);
             lastTouchedCoordinates.put(simpleMotionEvent.getId(), coordinate);
+            TaggedLogger.LEONID.debug("Last touched coordinate:  " + coordinate);
         }
     }
 
     private void onDown(SimpleMotionEvent simpleMotionEvent) {
         ViewUtils.stopCollapsing(startOffset.getView());
         ViewUtils.stopCollapsing(endOffset.getView());
-        int id = simpleMotionEvent.getId();
-        pointers.add(id);
-        lastTouchedCoordinates.put(id, (int) puzzleGalleryHelper.getCoordinate(simpleMotionEvent));
+        pointers.add(simpleMotionEvent.getId());
     }
 
     public void onUp(SimpleMotionEvent simpleMotionEvent) {
@@ -95,14 +92,12 @@ public class TouchesHandler implements TouchHandler {
 
     private void hideStartOffsetIfDisplayed() {
         isScrollingOutOfStartEdgeStarted = false;
-        offsetOutOfStartEdge = 0;
         startOverscrollCalculator.onStop();
         startOffset.hideIfDisplayed();
     }
 
     private void hideEndOffsetIfDisplayed() {
         isScrollingOutOfEndEdgeStarted = false;
-        offsetOutOfEndEdge = 0;
         endOverscrollCalculator.onStop();
         endOffset.hideIfDisplayed();
     }
@@ -115,30 +110,26 @@ public class TouchesHandler implements TouchHandler {
         int coordinate = (int) puzzleGalleryHelper.getCoordinate(simpleMotionEvent);
         int delta = coordinate - lastTouchedCoordinate;
         simpleMotionEvent.setDelta(delta);
-        TaggedLogger.LEONID.debug("DELTA:  " + simpleMotionEvent.getDelta());
         if (ViewUtils.isEndEdgeOfScrollViewHasBeenReached(scrollView, delta)) {
-            TaggedLogger.LEONID.debug("onOutOfEndEdge()");
             onOutOfEndEdge(simpleMotionEvent);
         } else if (ViewUtils.isStartEdgeOfScrollViewHasBeenReached(scrollView)) {
-            TaggedLogger.LEONID.debug("onOutOfStartEdge()");
             onOutOfStartEdge(simpleMotionEvent);
         } else {
-            TaggedLogger.LEONID.debug("OTHER");
             hideOffsetsIfDisplayed();
         }
     }
 
     private void onOutOfStartEdge(SimpleMotionEvent simpleMotionEvent) {
+        TaggedLogger.LEONID.debug("onOutOfStartEdge()");
         hideEndOffsetIfDisplayed();
         if (!isScrollingOutOfStartEdgeStarted) {
             onStartScrollingOutOfStartEdge();
         } else {
-            offsetOutOfStartEdge += simpleMotionEvent.getDelta();
             View offsetView = startOffset.getView();
             if (ViewUtils.isViewCollapsingUsingAndNotCompleted(offsetView)) {
+                ViewUtils.setViewCollapsingUnused(offsetView);
                 int base = puzzleGalleryHelper.getViewSize(offsetView);
                 startOverscrollCalculator.setBase(base);
-                ViewUtils.setViewCollapsingUnused(offsetView);
             }
             int overscrollOffset = startOverscrollCalculator.calculateOverscrollOffset(simpleMotionEvent.getDelta());
             if (overscrollOffset <= 0) {
@@ -152,16 +143,15 @@ public class TouchesHandler implements TouchHandler {
 
     private void onStartScrollingOutOfStartEdge() {
         isScrollingOutOfStartEdgeStarted = true;
-        offsetOutOfStartEdge = 0;
         startOverscrollCalculator.onStart();
     }
 
     private void onOutOfEndEdge(SimpleMotionEvent simpleMotionEvent) {
+        TaggedLogger.LEONID.debug("onOutOfEndEdge()");
         hideStartOffsetIfDisplayed();
         if (!isScrollingOutOfEndEdgeStarted) {
             onStartScrollingOutOfEndEdge();
         } else {
-            offsetOutOfEndEdge += simpleMotionEvent.getDelta();
             View offsetView = endOffset.getView();
             if (ViewUtils.isViewCollapsingUsingAndNotCompleted(offsetView)) {
                 int base = puzzleGalleryHelper.getViewSize(offsetView);
@@ -182,7 +172,6 @@ public class TouchesHandler implements TouchHandler {
 
     private void onStartScrollingOutOfEndEdge() {
         isScrollingOutOfEndEdgeStarted = true;
-        offsetOutOfEndEdge = 0;
         endOverscrollCalculator.onStart();
     }
 

@@ -1,4 +1,4 @@
-package com.cleancoder.learning.toucheshandler.superscrolling;
+package com.cleancoder.learning.toucheshandler.scrolling;
 
 import android.content.Context;
 import android.view.View;

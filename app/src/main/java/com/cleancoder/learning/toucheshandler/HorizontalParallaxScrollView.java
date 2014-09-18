@@ -7,13 +7,14 @@ import android.view.View;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 
-import com.cleancoder.learning.toucheshandler.superscrolling.MagneticScrollController;
-import com.cleancoder.learning.toucheshandler.superscrolling.PuzzleGalleryHelpers;
+import com.cleancoder.learning.toucheshandler.scrolling.ExtendedScrollView;
+import com.cleancoder.learning.toucheshandler.scrolling.MagneticScrollController;
+import com.cleancoder.learning.toucheshandler.scrolling.PuzzleGalleryHelpers;
 
 /**
  * Created by lsemenov on 18.09.2014.
  */
-public class HorizontalParallaxScrollView extends HorizontalScrollView {
+public class HorizontalParallaxScrollView extends HorizontalScrollView implements ExtendedScrollView {
 
     private LinearLayout mLayout;
     private MagneticScrollController magneticScrollController;
@@ -80,10 +81,12 @@ public class HorizontalParallaxScrollView extends HorizontalScrollView {
         }
     }
 
+    @Override
     public void scrollToStart() {
         scroll(0, getScrollY());
     }
 
+    @Override
     public void scrollToEnd() {
         scroll(getChildAt(getChildCount() - 1).getWidth(), getScrollY());
     }

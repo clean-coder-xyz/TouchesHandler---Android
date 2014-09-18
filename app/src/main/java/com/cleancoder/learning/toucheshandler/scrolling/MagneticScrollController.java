@@ -1,4 +1,4 @@
-package com.cleancoder.learning.toucheshandler.superscrolling;
+package com.cleancoder.learning.toucheshandler.scrolling;
 
 import android.content.Context;
 import android.view.MotionEvent;
@@ -23,7 +23,7 @@ public class MagneticScrollController {
     public MagneticScrollController(Context context, PuzzleGalleryHelper helper, HorizontalParallaxScrollView scrollView) {
         this.context = context;
         this.helper = helper;
-        this.scrollView = (ViewGroup) scrollView;
+        this.scrollView = scrollView;
         this.startOffset = new Offset(context, helper);
         this.endOffset = new Offset(context, helper);
         this.touchHandler = new TouchesHandler(helper, startOffset, endOffset, scrollView);
