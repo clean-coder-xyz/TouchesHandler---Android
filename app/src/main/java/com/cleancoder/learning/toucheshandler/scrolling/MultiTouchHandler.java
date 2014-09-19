@@ -15,7 +15,7 @@ import java.util.Set;
 /**
  * Created by lsemenov on 17.09.2014.
  */
-public class TouchesHandler implements TouchHandler {
+public class MultiTouchHandler implements TouchHandler {
 
     private final Object LOCK_TOUCH_HANDLING = new Object();
     private final PuzzleGalleryHelper puzzleGalleryHelper;
@@ -29,10 +29,10 @@ public class TouchesHandler implements TouchHandler {
     private OverscrollOffsetCalculator endOverscrollCalculator;
     private HorizontalParallaxScrollView scrollView;
 
-    public TouchesHandler(PuzzleGalleryHelper puzzleGalleryHelper,
-                          Offset startOffset,
-                          Offset endOffset,
-                          HorizontalParallaxScrollView scrollView) {
+    public MultiTouchHandler(PuzzleGalleryHelper puzzleGalleryHelper,
+                             Offset startOffset,
+                             Offset endOffset,
+                             HorizontalParallaxScrollView scrollView) {
         this.puzzleGalleryHelper = puzzleGalleryHelper;
         this.pointers = new HashSet<Integer>();
         this.isScrollingOutOfStartEdgeStarted = false;
@@ -50,17 +50,20 @@ public class TouchesHandler implements TouchHandler {
     public void handleTouch(MotionEvent event) {
         synchronized (LOCK_TOUCH_HANDLING) {
             SimpleMotionEvent simpleMotionEvent = SimpleMotionEvent.from(event);
-            switch (event.getAction()) {
+            switch (simpleMotionEvent.getAction()) {
                 case MotionEvent.ACTION_DOWN:
                 case MotionEvent.ACTION_POINTER_DOWN:
+                    TaggedLogger.LEONID.debug("DOWN");
                     onDown(simpleMotionEvent);
                     break;
                 case MotionEvent.ACTION_MOVE:
+                    TaggedLogger.LEONID.debug("MOVE");
                     onMove(simpleMotionEvent);
                     break;
                 case MotionEvent.ACTION_POINTER_UP:
                 case MotionEvent.ACTION_UP:
                 case MotionEvent.ACTION_CANCEL:
+                    TaggedLogger.LEONID.debug("UP");
                     onUp(simpleMotionEvent);
                     break;
             }
@@ -131,7 +134,7 @@ public class TouchesHandler implements TouchHandler {
                 int base = puzzleGalleryHelper.getViewSize(offsetView);
                 startOverscrollCalculator.setBase(base);
             }
-            int overscrollOffset = startOverscrollCalculator.calculateOverscrollOffset(simpleMotionEvent.getDelta());
+            int overscrollOffset = startOverscrollCalculator.addOffsetAndCalculateOverscrollOffset(simpleMotionEvent.getDelta());
             if (overscrollOffset <= 0) {
                 hideStartOffsetIfDisplayed();
                 return;
@@ -159,7 +162,7 @@ public class TouchesHandler implements TouchHandler {
                 endOverscrollCalculator.setBase(realBase);
                 ViewUtils.setViewCollapsingUnused(offsetView);
             }
-            int overscrollOffset = endOverscrollCalculator.calculateOverscrollOffset(simpleMotionEvent.getDelta());
+            int overscrollOffset = endOverscrollCalculator.addOffsetAndCalculateOverscrollOffset(simpleMotionEvent.getDelta());
             int realOverscrollOffset = -overscrollOffset;
             if (realOverscrollOffset <= 0) {
                 hideEndOffsetIfDisplayed();

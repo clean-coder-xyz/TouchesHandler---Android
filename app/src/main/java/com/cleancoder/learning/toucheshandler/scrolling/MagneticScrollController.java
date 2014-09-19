@@ -15,7 +15,7 @@ public class MagneticScrollController {
 
     private final Context context;
     private final PuzzleGalleryHelper helper;
-    private final TouchesHandler touchHandler;
+    private final MultiTouchHandler touchHandler;
     private final ViewGroup scrollView;
     private final Offset startOffset;
     private final Offset endOffset;
@@ -26,7 +26,7 @@ public class MagneticScrollController {
         this.scrollView = scrollView;
         this.startOffset = new Offset(context, helper);
         this.endOffset = new Offset(context, helper);
-        this.touchHandler = new TouchesHandler(helper, startOffset, endOffset, scrollView);
+        this.touchHandler = new MultiTouchHandler(helper, startOffset, endOffset, scrollView);
     }
 
     public LinearLayout prepareView() {

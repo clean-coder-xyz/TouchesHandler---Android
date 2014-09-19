@@ -5,6 +5,6 @@ package com.cleancoder.learning.toucheshandler.scrolling;
  */
 public class MagneticEffectConstants {
 
-    public static final float COLLAPSING_DURATION_COEFFICIENT = 2.0f;
+    public static final float COLLAPSING_DURATION_COEFFICIENT = 2.5f;
 
 }

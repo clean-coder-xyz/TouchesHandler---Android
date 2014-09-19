@@ -15,12 +15,19 @@ public class SimpleMotionEvent {
     private float y;
 
     public static SimpleMotionEvent from(MotionEvent event) {
-        int index = MotionEventCompat.getActionIndex(event);
         SimpleMotionEvent simpleMotionEvent = new SimpleMotionEvent();
+        int index = MotionEventCompat.getActionIndex(event);
         simpleMotionEvent.setAction(MotionEventCompat.getActionMasked(event));
         simpleMotionEvent.setX(MotionEventCompat.getX(event, index));
         simpleMotionEvent.setY(MotionEventCompat.getY(event, index));
         simpleMotionEvent.setId(MotionEventCompat.getPointerId(event, index));
+        /*
+        int index = event.getActionIndex();
+        simpleMotionEvent.setAction(event.getActionMasked());
+        simpleMotionEvent.setX(event.getX(index));
+        simpleMotionEvent.setY(event.getY(index));
+        simpleMotionEvent.setId(event.getPointerId(index));
+        */
         return simpleMotionEvent;
     }
 
