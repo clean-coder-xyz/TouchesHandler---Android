@@ -4,20 +4,23 @@ import android.content.Context;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.HorizontalScrollView;
-import android.widget.LinearLayout;
 
-import com.cleancoder.learning.toucheshandler.scrolling.ExtendedScrollView;
-import com.cleancoder.learning.toucheshandler.scrolling.MagneticScrollController;
-import com.cleancoder.learning.toucheshandler.scrolling.PuzzleGalleryHelpers;
+import com.cleancoder.learning.toucheshandler.scrolling.ParallaxScrollController;
+import com.cleancoder.learning.toucheshandler.scrolling.ScrollableToBounds;
+import com.cleancoder.learning.toucheshandler.scrolling.SimpleMotionEvent;
 
 /**
  * Created by lsemenov on 18.09.2014.
  */
-public class HorizontalParallaxScrollView extends HorizontalScrollView implements ExtendedScrollView {
+public class HorizontalParallaxScrollView extends HorizontalScrollView implements ScrollableToBounds {
 
-    private LinearLayout mLayout;
-    private MagneticScrollController magneticScrollController;
+    private final Object LOCK_SCROLL_SPEED = new Object();
+
+    private float scrollSpeed;
+    private ViewGroup mLayout;
+    private ParallaxScrollController parallaxScrollController;
 
     public HorizontalParallaxScrollView(Context context) {
         super(context);
@@ -35,16 +38,19 @@ public class HorizontalParallaxScrollView extends HorizontalScrollView implement
     }
 
     private void init(Context context) {
+        synchronized (LOCK_SCROLL_SPEED) {
+            scrollSpeed = 0.0f;
+        }
         setVerticalScrollBarEnabled(false);
         setHorizontalScrollBarEnabled(false);
-        magneticScrollController =
-                new MagneticScrollController(context, PuzzleGalleryHelpers.HORIZONTAL, this);
-        mLayout = magneticScrollController.prepareView();
+        parallaxScrollController =
+                new ParallaxScrollController(context, OrientationHelpers.HORIZONTAL, this, this);
+        mLayout = parallaxScrollController.prepareView();
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        magneticScrollController.handleTouch(event);
+        parallaxScrollController.handleTouch(SimpleMotionEvent.from(event));
         return super.onTouchEvent(event);
     }
 
@@ -90,5 +96,17 @@ public class HorizontalParallaxScrollView extends HorizontalScrollView implement
     public void scrollToEnd() {
         scroll(getChildAt(getChildCount() - 1).getWidth(), getScrollY());
     }
+
+    @Override
+    public boolean isScrolledToStart() {
+        return getScrollX() == 0;
+    }
+
+    @Override
+    public boolean isScrolledToEnd() {
+        View childView = getChildAt(getChildCount() - 1);
+        return (childView.getRight()) == (getWidth() + getScrollX());
+    }
+
 
 }

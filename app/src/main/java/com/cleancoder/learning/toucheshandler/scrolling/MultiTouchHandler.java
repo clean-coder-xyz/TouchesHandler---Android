@@ -2,8 +2,9 @@ package com.cleancoder.learning.toucheshandler.scrolling;
 
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 
-import com.cleancoder.learning.toucheshandler.HorizontalParallaxScrollView;
+import com.cleancoder.learning.toucheshandler.OrientationHelper;
 import com.cleancoder.learning.toucheshandler.TaggedLogger;
 import com.cleancoder.learning.toucheshandler.ViewUtils;
 
@@ -15,10 +16,11 @@ import java.util.Set;
 /**
  * Created by lsemenov on 17.09.2014.
  */
-public class MultiTouchHandler implements TouchHandler {
+public class MultiTouchHandler implements OnStopScrollingObserver.Listener {
 
+    private final Object LOCK_METHOD_IS_THERE_NO_TOUCHES = new Object();
     private final Object LOCK_TOUCH_HANDLING = new Object();
-    private final PuzzleGalleryHelper puzzleGalleryHelper;
+    private final OrientationHelper orientationHelper;
     private final Set<Integer> pointers;
     private boolean isScrollingOutOfStartEdgeStarted;
     private boolean isScrollingOutOfEndEdgeStarted;
@@ -27,13 +29,14 @@ public class MultiTouchHandler implements TouchHandler {
     private Offset endOffset;
     private OverscrollOffsetCalculator startOverscrollCalculator;
     private OverscrollOffsetCalculator endOverscrollCalculator;
-    private HorizontalParallaxScrollView scrollView;
+    private ViewGroup scrollView;
+    private ScrollableToBounds scrollViewScrollableToBounds;
 
-    public MultiTouchHandler(PuzzleGalleryHelper puzzleGalleryHelper,
+    public MultiTouchHandler(OrientationHelper orientationHelper,
                              Offset startOffset,
                              Offset endOffset,
-                             HorizontalParallaxScrollView scrollView) {
-        this.puzzleGalleryHelper = puzzleGalleryHelper;
+                             ViewGroup scrollView) {
+        this.orientationHelper = orientationHelper;
         this.pointers = new HashSet<Integer>();
         this.isScrollingOutOfStartEdgeStarted = false;
         this.isScrollingOutOfEndEdgeStarted = false;
@@ -42,14 +45,13 @@ public class MultiTouchHandler implements TouchHandler {
         this.startOverscrollCalculator = new OverscrollOffsetCalculator();
         this.endOverscrollCalculator = new OverscrollOffsetCalculator();
         this.scrollView = scrollView;
+        this.scrollViewScrollableToBounds = (ScrollableToBounds) scrollView;
         this.lastTouchedCoordinates = new HashMap<Integer, Integer>();
         // TODO
     }
 
-    @Override
-    public void handleTouch(MotionEvent event) {
+    public void handleTouch(SimpleMotionEvent simpleMotionEvent) {
         synchronized (LOCK_TOUCH_HANDLING) {
-            SimpleMotionEvent simpleMotionEvent = SimpleMotionEvent.from(event);
             switch (simpleMotionEvent.getAction()) {
                 case MotionEvent.ACTION_DOWN:
                 case MotionEvent.ACTION_POINTER_DOWN:
@@ -67,25 +69,81 @@ public class MultiTouchHandler implements TouchHandler {
                     onUp(simpleMotionEvent);
                     break;
             }
-            int coordinate = (int) puzzleGalleryHelper.getCoordinate(simpleMotionEvent);
+            int coordinate = (int) orientationHelper.getCoordinate(simpleMotionEvent);
             lastTouchedCoordinates.put(simpleMotionEvent.getId(), coordinate);
             TaggedLogger.LEONID.debug("Last touched coordinate:  " + coordinate);
         }
     }
 
     private void onDown(SimpleMotionEvent simpleMotionEvent) {
+        TaggedLogger.LEONID.debug("onDown()");
+        int id = simpleMotionEvent.getId();
+        if (pointers.contains(id)) {
+            return;
+        }
         ViewUtils.stopCollapsing(startOffset.getView());
         ViewUtils.stopCollapsing(endOffset.getView());
         pointers.add(simpleMotionEvent.getId());
     }
 
     public void onUp(SimpleMotionEvent simpleMotionEvent) {
+        TaggedLogger.LEONID.debug("onUp()");
         int id = simpleMotionEvent.getId();
+        if (!pointers.contains(id)) {
+            return;
+        }
         pointers.remove(id);
         lastTouchedCoordinates.remove(id);
-        if (pointers.isEmpty()) {
+        if (isThereNoTouches()) {
+            if (!isScrollingOutOfEdgeStarted()) {
+                startOnStopScrollingObserverTask();
+            }
             hideOffsetsIfDisplayed();
         }
+    }
+
+    private boolean isScrollingOutOfEdgeStarted() {
+        return isScrollingOutOfStartEdgeStarted || isScrollingOutOfEndEdgeStarted;
+    }
+
+    private boolean isThereNoTouches() {
+        synchronized (LOCK_METHOD_IS_THERE_NO_TOUCHES) {
+            return pointers.isEmpty();
+        }
+    }
+
+    private void startOnStopScrollingObserverTask() {
+        OnStopScrollingObserver observer = OnStopScrollingObserver.builder()
+                .helper(orientationHelper)
+                .view(scrollView)
+                .listener(this)
+                .delay(100L)
+                .build();
+        observer.startDelayed();
+    }
+
+    @Override
+    public void onScrollStopped(OnStopScrollingObserver.Speedometer speedometer) {
+        if (isThereNoTouches()) {
+            if (scrollViewScrollableToBounds.isScrolledToStart()) {
+                showBouncingOffEdge(startOffset, speedometer.getSpeed());
+            } else if (scrollViewScrollableToBounds.isScrolledToEnd()) {
+                showBouncingOffEdge(endOffset, speedometer.getSpeed());
+            }
+        }
+    }
+
+    private void showBouncingOffEdge(Offset offset, double speed) {
+        int delta = deltaFromSpeed(speed);
+        int expandDuration = 5 * delta;
+        TaggedLogger.LEONID.debug("Show bouncing off the edge:  delta=" + delta);
+        BouncingEffect bouncingEffect = new BouncingEffect(expandDuration, delta, orientationHelper);
+        bouncingEffect.start(offset, scrollViewScrollableToBounds);
+    }
+
+    private static int deltaFromSpeed(double speed) {
+        double normalSpeed = speed * 1000000;
+        return (int) (normalSpeed * Math.log(normalSpeed));
     }
 
     private void hideOffsetsIfDisplayed() {
@@ -106,16 +164,17 @@ public class MultiTouchHandler implements TouchHandler {
     }
 
     public void onMove(SimpleMotionEvent simpleMotionEvent) {
+        TaggedLogger.LEONID.debug("onMove()");
         Integer lastTouchedCoordinate = lastTouchedCoordinates.get(simpleMotionEvent.getId());
         if (lastTouchedCoordinate == null) {
             return;
         }
-        int coordinate = (int) puzzleGalleryHelper.getCoordinate(simpleMotionEvent);
+        int coordinate = (int) orientationHelper.getCoordinate(simpleMotionEvent);
         int delta = coordinate - lastTouchedCoordinate;
         simpleMotionEvent.setDelta(delta);
-        if (ViewUtils.isEndEdgeOfScrollViewHasBeenReached(scrollView, delta)) {
+        if (scrollViewScrollableToBounds.isScrolledToEnd()) {
             onOutOfEndEdge(simpleMotionEvent);
-        } else if (ViewUtils.isStartEdgeOfScrollViewHasBeenReached(scrollView)) {
+        } else if (scrollViewScrollableToBounds.isScrolledToStart()) {
             onOutOfStartEdge(simpleMotionEvent);
         } else {
             hideOffsetsIfDisplayed();
@@ -131,16 +190,17 @@ public class MultiTouchHandler implements TouchHandler {
             View offsetView = startOffset.getView();
             if (ViewUtils.isViewCollapsingUsingAndNotCompleted(offsetView)) {
                 ViewUtils.setViewCollapsingUnused(offsetView);
-                int base = puzzleGalleryHelper.getViewSize(offsetView);
+                int base = orientationHelper.getViewSize(offsetView);
                 startOverscrollCalculator.setBase(base);
             }
-            int overscrollOffset = startOverscrollCalculator.addOffsetAndCalculateOverscrollOffset(simpleMotionEvent.getDelta());
+            int overscrollOffset =
+                    startOverscrollCalculator.addOffsetAndCalculateOverscrollOffset(simpleMotionEvent.getDelta());
             if (overscrollOffset <= 0) {
                 hideStartOffsetIfDisplayed();
                 return;
             }
             startOffset.set(overscrollOffset);
-            scrollView.scrollToStart();
+            scrollViewScrollableToBounds.scrollToStart();
         }
     }
 
@@ -157,7 +217,7 @@ public class MultiTouchHandler implements TouchHandler {
         } else {
             View offsetView = endOffset.getView();
             if (ViewUtils.isViewCollapsingUsingAndNotCompleted(offsetView)) {
-                int base = puzzleGalleryHelper.getViewSize(offsetView);
+                int base = orientationHelper.getViewSize(offsetView);
                 int realBase = -base;
                 endOverscrollCalculator.setBase(realBase);
                 ViewUtils.setViewCollapsingUnused(offsetView);
@@ -169,7 +229,7 @@ public class MultiTouchHandler implements TouchHandler {
                 return;
             }
             endOffset.set(realOverscrollOffset);
-            scrollView.scrollToEnd();
+            scrollViewScrollableToBounds.scrollToEnd();
         }
     }
 

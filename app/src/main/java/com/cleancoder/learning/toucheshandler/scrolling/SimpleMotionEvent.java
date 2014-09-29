@@ -21,18 +21,11 @@ public class SimpleMotionEvent {
         simpleMotionEvent.setX(MotionEventCompat.getX(event, index));
         simpleMotionEvent.setY(MotionEventCompat.getY(event, index));
         simpleMotionEvent.setId(MotionEventCompat.getPointerId(event, index));
-        /*
-        int index = event.getActionIndex();
-        simpleMotionEvent.setAction(event.getActionMasked());
-        simpleMotionEvent.setX(event.getX(index));
-        simpleMotionEvent.setY(event.getY(index));
-        simpleMotionEvent.setId(event.getPointerId(index));
-        */
         return simpleMotionEvent;
     }
 
-    public SimpleMotionEvent() {
-        // do nothing
+    private SimpleMotionEvent() {
+        // empty constructor
     }
 
     public SimpleMotionEvent setX(float x) {

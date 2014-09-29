@@ -1,32 +1,39 @@
-package com.cleancoder.learning.toucheshandler.scrolling;
+package com.cleancoder.learning.toucheshandler;
 
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
-import com.cleancoder.learning.toucheshandler.ViewUtils;
+import com.cleancoder.learning.toucheshandler.scrolling.SimpleMotionEvent;
 
 /**
  * Created by lsemenov on 08.09.2014.
  */
-public class PuzzleGalleryHelpers {
+public class OrientationHelpers {
 
 
-    public static final PuzzleGalleryHelper VERTICAL = new PuzzleGalleryHelper() {
+    public static final OrientationHelper VERTICAL = new OrientationHelper() {
+
+        @Override
+        public int getScrollCoordinate(View view) {
+            return view.getScrollY();
+        }
+
         @Override
         public void setSize(View view, int size) {
             ViewUtils.setHeight(view, size);
         }
 
         @Override
-        public ViewGroup.LayoutParams createLayoutParams() {
-            return new ViewGroup.LayoutParams(1, FrameLayout.LayoutParams.WRAP_CONTENT);
+        public ViewGroup.LayoutParams createOffsetLayoutParams() {
+            return new ViewGroup.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT);
         }
 
         @Override
-        public void collapse(View view) {
-            ViewUtils.collapseVertical(view, MagneticEffectConstants.COLLAPSING_DURATION_COEFFICIENT);
+        public Animation newDeceleratingCollapseAnimation(View view) {
+            return ViewUtils.newDeceleratingCollapseAnimationVertical(view, this);
         }
 
         @Override
@@ -61,24 +68,40 @@ public class PuzzleGalleryHelpers {
             return view.getHeight();
         }
 
+        @Override
+        public int getStartCoordinate(View view) {
+            return view.getTop();
+        }
+
+        @Override
+        public int getEndCoordinate(View view) {
+            return view.getBottom();
+        }
+
     };
 
 
 
-    public static final PuzzleGalleryHelper HORIZONTAL = new PuzzleGalleryHelper() {
+    public static final OrientationHelper HORIZONTAL = new OrientationHelper() {
+
+        @Override
+        public int getScrollCoordinate(View view) {
+            return view.getScrollX();
+        }
+
         @Override
         public void setSize(View view, int size) {
             ViewUtils.setWidth(view, size);
         }
 
         @Override
-        public ViewGroup.LayoutParams createLayoutParams() {
-            return new ViewGroup.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, 1);
+        public ViewGroup.LayoutParams createOffsetLayoutParams() {
+            return new ViewGroup.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.MATCH_PARENT);
         }
 
         @Override
-        public void collapse(View view) {
-            ViewUtils.collapseHorizontal(view, MagneticEffectConstants.COLLAPSING_DURATION_COEFFICIENT);
+        public Animation newDeceleratingCollapseAnimation(View view) {
+            return ViewUtils.newDeceleratingCollapseAnimationHorizontal(view, this);
         }
 
         @Override
@@ -111,6 +134,16 @@ public class PuzzleGalleryHelpers {
         @Override
         public int getViewSize(View view) {
             return view.getWidth();
+        }
+
+        @Override
+        public int getStartCoordinate(View view) {
+            return view.getLeft();
+        }
+
+        @Override
+        public int getEndCoordinate(View view) {
+            return view.getRight();
         }
 
     };

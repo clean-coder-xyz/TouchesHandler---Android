@@ -9,11 +9,14 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
-import android.view.animation.Transformation;
 import android.widget.HorizontalScrollView;
 import android.widget.ScrollView;
 
+import com.cleancoder.learning.toucheshandler.scrolling.ExpandCollapseAnimation;
+import com.cleancoder.learning.toucheshandler.scrolling.ExpandCollapseAnimationFactory;
+
 public class ViewUtils {
+
 
     public static final View inflate(final Context pContext, final int pLayoutID){
         return LayoutInflater.from(pContext).inflate(pLayoutID, null);
@@ -26,7 +29,7 @@ public class ViewUtils {
     public static void setViewCollapsingUnused(View view) {
         handleCollapseAnimation(view, new CollapseAnimationHandler() {
             @Override
-            public void handle(CollapseAnimation collapseAnimation) {
+            public void handle(ExpandCollapseAnimation collapseAnimation) {
                 collapseAnimation.setUsed(false);
             }
 
@@ -42,7 +45,7 @@ public class ViewUtils {
         final ValueHolder<Boolean> viewCollapsingStartedButNotCompleted = new ValueHolder<Boolean>(false);
         handleCollapseAnimation(view, new CollapseAnimationHandler() {
             @Override
-            public void handle(CollapseAnimation collapseAnimation) {
+            public void handle(ExpandCollapseAnimation collapseAnimation) {
                 if (!collapseAnimation.isCompleted() && collapseAnimation.isUsed()) {
                     viewCollapsingStartedButNotCompleted.setValue(true);
                 }
@@ -75,22 +78,22 @@ public class ViewUtils {
         setSize(view, view.getWidth(), height);
     }
 
-    public static boolean isEndEdgeOfScrollViewHasBeenReached(View scrollView, int delta) {
+    public static boolean isEndEdgeOfScrollViewHasBeenReached(View scrollView) {
         if (scrollView instanceof HorizontalScrollView) {
-            return isRightEdgeOfScrollViewHasBeenReached((HorizontalScrollView) scrollView, delta);
+            return isRightEdgeOfScrollViewHasBeenReached((HorizontalScrollView) scrollView);
         } else if (scrollView instanceof ScrollView) {
-            return isBottomEdgeOfScrollViewHasBeenReached((ScrollView) scrollView, delta);
+            return isBottomEdgeOfScrollViewHasBeenReached((ScrollView) scrollView);
         }
         throw new IllegalArgumentException("Argument <scrollView> " +
                 scrollView + " is not ScrollView nor HorizontalScrollView");
     }
 
-    public static boolean isRightEdgeOfScrollViewHasBeenReached(HorizontalScrollView scrollView, int delta) {
+    public static boolean isRightEdgeOfScrollViewHasBeenReached(HorizontalScrollView scrollView) {
         View childView = scrollView.getChildAt(scrollView.getChildCount() - 1);
         return (childView.getRight()) == (scrollView.getWidth() + scrollView.getScrollX());
     }
 
-    public static boolean isBottomEdgeOfScrollViewHasBeenReached(ScrollView scrollView, int delta) {
+    public static boolean isBottomEdgeOfScrollViewHasBeenReached(ScrollView scrollView) {
         View childView = scrollView.getChildAt(scrollView.getChildCount() - 1);
         return (childView.getBottom()) == (scrollView.getHeight() + scrollView.getScrollY());
     }
@@ -114,13 +117,9 @@ public class ViewUtils {
     }
 
 
-    public static void collapseVertical(final View view, float durationCoefficient) {
+    public static Animation newDeceleratingCollapseAnimationVertical(final View view, OrientationHelper helper) {
         final int initialHeight = view.getMeasuredHeight();
-        Animation animation = new CollapseAnimationVertical(view, initialHeight);
-        float density = view.getContext().getResources().getDisplayMetrics().density;
-        int duration = (int) (durationCoefficient * initialHeight / density);
-        animation.setDuration(duration);
-        view.startAnimation(animation);
+        return ExpandCollapseAnimationFactory.newDeceleratingCollapseAnimation(view, initialHeight, helper);
     }
 
     public static void setVisible(View view, boolean visible) {
@@ -135,7 +134,7 @@ public class ViewUtils {
     public static void stopCollapsing(View view) {
         handleCollapseAnimation(view, new CollapseAnimationHandler() {
             @Override
-            public void handle(CollapseAnimation collapseAnimation) {
+            public void handle(ExpandCollapseAnimation collapseAnimation) {
                 collapseAnimation.stop();
             }
 
@@ -144,154 +143,20 @@ public class ViewUtils {
         });
     }
 
-
-    private static abstract class CollapseAnimation extends Animation {
-        public abstract boolean isStopped();
-        public abstract void stop();
-        public abstract void setUsed(boolean unused);
-        public abstract boolean isUsed();
-        public abstract boolean isCompleted();
-    }
-
-
-    private static class CollapseAnimationVertical extends CollapseAnimation {
-        private final int initialHeight;
-        private final View view;
-        private boolean completed;
-        private boolean stopped;
-        private boolean used;
-
-        public CollapseAnimationVertical(View view, int initialHeight) {
-            this.view = view;
-            this.initialHeight = initialHeight;
-            this.stopped = false;
-            this.used = true;
-            this.completed = false;
-        }
-
-        @Override
-        protected void applyTransformation(float interpolatedTime, Transformation t) {
-            if (!isUsed() || isStopped()) {
-                return;
-            }
-            if(interpolatedTime == 1){
-                view.setVisibility(View.GONE);
-                completed = true;
-            } else{
-                ViewUtils.setHeight(view, initialHeight - (int) (initialHeight * interpolatedTime));
-            }
-        }
-
-        @Override
-        public boolean isStopped() {
-            return stopped;
-        }
-
-        @Override
-        public boolean willChangeBounds() {
-            return true;
-        }
-
-        @Override
-        public void stop() {
-            stopped = true;
-        }
-
-        @Override
-        public void setUsed(boolean used) {
-            this.used = used;
-        }
-
-        @Override
-        public boolean isUsed() {
-            return used;
-        }
-
-        @Override
-        public boolean isCompleted() {
-            return completed;
-        }
-    }
-
-
-    private static class CollapseAnimationHorizontal extends CollapseAnimation {
-        private final int initialWidth;
-        private final View view;
-        private boolean completed;
-        private boolean stopped;
-        private boolean used;
-
-        public CollapseAnimationHorizontal(View view, int initialWidth) {
-            this.view = view;
-            this.initialWidth = initialWidth;
-            this.stopped = false;
-            this.used = true;
-            this.completed = false;
-        }
-
-        @Override
-        protected void applyTransformation(float interpolatedTime, Transformation t) {
-            if (!isUsed() || isStopped()) {
-                return;
-            }
-            if(interpolatedTime == 1){
-                view.setVisibility(View.GONE);
-                completed = true;
-            } else{
-                ViewUtils.setWidth(view, initialWidth - (int)(initialWidth * interpolatedTime));
-            }
-        }
-
-        @Override
-        public boolean isStopped() {
-            return stopped;
-        }
-
-        @Override
-        public boolean willChangeBounds() {
-            return true;
-        }
-
-        @Override
-        public void stop() {
-            stopped = true;
-        }
-
-        @Override
-        public void setUsed(boolean used) {
-            this.used = used;
-        }
-
-        @Override
-        public boolean isUsed() {
-            return used;
-        }
-
-        @Override
-        public boolean isCompleted() {
-            return completed;
-        }
-    }
-
-
-    public static void collapseHorizontal(final View view, float durationCoefficient) {
+    public static Animation newDeceleratingCollapseAnimationHorizontal(final View view, OrientationHelper helper) {
         final int initialWidth = view.getMeasuredWidth();
-        Animation animation = new CollapseAnimationHorizontal(view, initialWidth);
-        float density = view.getContext().getResources().getDisplayMetrics().density;
-        int duration = (int) (durationCoefficient * initialWidth / density);
-        animation.setDuration(duration);
-        view.startAnimation(animation);
+        return ExpandCollapseAnimationFactory.newDeceleratingCollapseAnimation(view, initialWidth, helper);
     }
 
     private static interface CollapseAnimationHandler {
-        void handle(CollapseAnimation collapseAnimation);
+        void handle(ExpandCollapseAnimation collapseAnimation);
         void onThereIsNoAnimationCollapse();
     }
 
     public static void undoCollapse(final View view) {
         handleCollapseAnimation(view, new CollapseAnimationHandler() {
             @Override
-            public void handle(CollapseAnimation collapseAnimation) {
+            public void handle(ExpandCollapseAnimation collapseAnimation) {
                 collapseAnimation.stop();
             }
 
@@ -304,11 +169,15 @@ public class ViewUtils {
 
     private static void handleCollapseAnimation(View view, CollapseAnimationHandler handler) {
         Animation animation = view.getAnimation();
-        if (animation instanceof CollapseAnimation) {
-            handler.handle((CollapseAnimation) animation);
+        if (animation instanceof ExpandCollapseAnimation) {
+            handler.handle((ExpandCollapseAnimation) animation);
         } else {
             handler.onThereIsNoAnimationCollapse();
         }
+    }
+
+    public static ExpandCollapseAnimation newLinearExpandAnimation(View view, OrientationHelper helper, int targetSize) {
+        return ExpandCollapseAnimationFactory.newLinearExpandAnimation(view, targetSize, helper);
     }
 
 
